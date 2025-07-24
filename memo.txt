@@ -1,0 +1,16 @@
+PostgreSQL 서비스 시작: brew services start postgresql@14
+
+PostgreSQL 서비스 중지: brew services stop postgresql@14
+
+psql -U jujihwan -d postgres
+
+shadow_map_db 데이터베이스 접속
+psql -U jihwan -d shadow_map_db
+
+
+
+psql -U jujihwan -d postgres
+
+ALTER ROLE shadow_user RENAME TO jihwan;
+
+psql -U jihwan -d shadow_map_db

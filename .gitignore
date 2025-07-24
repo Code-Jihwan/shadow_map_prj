@@ -1,0 +1,14 @@
+# 가상 환경
+venv/
+__pycache__/
+
+# VS Code 설정
+.vscode/
+
+# macOS 시스템 파일
+.DS_Store
+
+# 기타 (필요 시 추가)
+*.pyc
+
+memo.txt

@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>그늘길 지도</title>
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+    
+    <link href="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.css" rel="stylesheet">
+    <script src="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.js"></script>
+    
+    <style>
+        body { margin: 0; padding: 0; }
+        #map { position: absolute; top: 0; bottom: 0; width: 100%; }
+
+        /* --- 추가된 부분: UI 컨트롤 박스 스타일 --- */
+        .controls {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background-color: white;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+            z-index: 1; /* 지도 위에 표시되도록 함 */
+        }
+        .controls button {
+            display: block;
+            width: 100%;
+            padding: 8px 12px;
+            margin-bottom: 5px;
+            cursor: pointer;
+            border: 1px solid #ccc;
+            background-color: #f9f9f9;
+        }
+        .controls button:hover {
+            background-color: #e9e9e9;
+        }
+    </style>
+</head>
+<body>
+
+<!-- --- 추가된 부분: 시간 선택 버튼 UI --- -->
+<div class="controls">
+    <h3>시간대별 그림자</h3>
+    <button id="btn-09">오전 9시</button>
+    <button id="btn-12">정오 12시</button>
+    <button id="btn-15">오후 3시</button>
+    <button id="btn-clear">그림자 지우기</button>
+</div>
+
+<div id="map"></div>
+
+<script>
+    mapboxgl.accessToken = 'pk.eyJ1Ijoiamlod2FuMzE5NCIsImEiOiJjbWRoaHdsaW4wMXNmMmxwcG56OG5pYWJjIn0._eUGiuSMDunXHCbI1ylXpA'; // 본인의 토큰으로 교체!
+
+    const map = new mapboxgl.Map({
+        container: 'map',
+        style: 'mapbox://styles/mapbox/light-v11',
+        center: [129.0988, 35.1415],
+        zoom: 15.5,
+        pitch: 60,
+        bearing: -30,
+        antialias: true
+    });
+
+    map.on('load', () => {
+        map.addLayer({
+            'id': '3d-buildings',
+            'source': 'composite',
+            'source-layer': 'building',
+            'filter': ['==', 'extrude', 'true'],
+            'type': 'fill-extrusion',
+            'minzoom': 14,
+            'paint': {
+                'fill-extrusion-color': '#aaa',
+                'fill-extrusion-height': ['get', 'height'],
+                'fill-extrusion-base': ['get', 'min_height'],
+                'fill-extrusion-opacity': 0.8
+            }
+        });
+
+        // --- 추가된 부분: API 호출 및 그림자 레이어 추가 함수 ---
+
+        // 그림자를 가져와서 지도에 그리는 함수
+        async function fetchAndDrawShadows(timeStr) {
+            // 기존에 그림자 레이어가 있다면 먼저 삭제
+            removeShadowLayer();
+
+            const lat = 35.1706;
+            const lon = 129.1305;
+            const apiUrl = `http://127.0.0.1:5001/shadows?lat=${lat}&lon=${lon}&time=${timeStr}`;
+            
+            console.log(`Requesting shadows from: ${apiUrl}`);
+
+            try {
+                const response = await fetch(apiUrl);
+                const shadowGeoJSON = await response.json();
+
+                if (shadowGeoJSON.features.length > 0) {
+                    // 지도에 새로운 데이터 소스(source) 추가
+                    map.addSource('shadow-source', {
+                        'type': 'geojson',
+                        'data': shadowGeoJSON
+                    });
+
+                    // 소스를 기반으로 새로운 레이어(layer) 추가
+                    map.addLayer({
+                        'id': 'shadow-layer',
+                        'type': 'fill',
+                        'source': 'shadow-source',
+                        'paint': {
+                            'fill-color': '#000000', // 그림자 색상
+                            'fill-opacity': 0.4    // 그림자 투명도
+                        }
+                    }, '3d-buildings'); // 3D 건물 레이어 아래에 그림자가 그려지도록 순서 지정
+                } else {
+                    console.log(`No shadows at ${timeStr}.`);
+                }
+            } catch (error) {
+                console.error('Error fetching shadow data:', error);
+            }
+        }
+        
+        // 그림자 레이어를 삭제하는 함수
+        function removeShadowLayer() {
+            if (map.getLayer('shadow-layer')) {
+                map.removeLayer('shadow-layer');
+            }
+            if (map.getSource('shadow-source')) {
+                map.removeSource('shadow-source');
+            }
+        }
+
+        // 각 버튼에 클릭 이벤트 리스너 추가
+        document.getElementById('btn-09').addEventListener('click', () => fetchAndDrawShadows('09:00'));
+        document.getElementById('btn-12').addEventListener('click', () => fetchAndDrawShadows('12:00'));
+        document.getElementById('btn-15').addEventListener('click', () => fetchAndDrawShadows('15:00'));
+        document.getElementById('btn-clear').addEventListener('click', removeShadowLayer);
+    });
+
+</script>
+
+</body>
+</html>

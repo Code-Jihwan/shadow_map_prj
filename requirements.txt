@@ -1,5 +1,15 @@
-psycopg2-binary
-Shapely
-fiona
-astral
+# Flask 및 웹 서버 관련
 Flask
+flask-cors
+
+# 데이터베이스 (PostgreSQL) 관련
+psycopg2-binary
+
+# 지리 공간 데이터 처리 및 계산 관련
+Shapely
+pyproj
+fiona
+
+# 천문학 계산 (태양 위치) 관련
+astral
+pytz
